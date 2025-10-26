@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Creche - Check-in/Check-out</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #FF9800;
+            --accent-color: #2196F3;
+            --light-color: #FFF9C4;
+            --dark-color: #388E3C;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Comic Neue', cursive;
+        }
+        
+        body {
+            background-color: #f0f8ff;
+            background-image: url('https://example.com/sua-imagem-de-fundo.jpg'); /* Substitua pela URL da sua imagem */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            border: 8px solid var(--primary-color);
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 8px solid var(--dark-color);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0 var(--dark-color);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: var(--secondary-color);
+            border-bottom: 4px solid var(--dark-color);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+        }
+        
+        .tab.active {
+            background-color: var(--light-color);
+            color: var(--dark-color);
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .content {
+            padding: 30px;
+            min-height: 400px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--dark-color);
+            font-size: 1.1rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--accent-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            background-color: white;
+        }
+        
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+            display: block;
+            margin: 20px auto 0;
+        }
+        
+        button:hover {
+            background-color: #1976D2;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: none;
+        }
+        
+        .success {
+            background-color: #C8E6C9;
+            color: var(--dark-color);
+            border: 2px solid var(--dark-color);
+        }
+        
+        .error {
+            background-color: #FFCDD2;
+            color: #B71C1C;
+            border: 2px solid #B71C1C;
+        }
+        
+        .child-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid var(--accent-color);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .child-item {
+            padding: 10px;
+            border-bottom: 1px dashed var(--accent-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .child-item:last-child {
+            border-bottom: none;
+        }
+        
+        .child-info {
+            flex: 1;
+        }
+        
+        .child-id {
+            font-weight: bold;
+            color: var(--dark-color);
+            font-size: 1.2rem;
+        }
+        
+        .no-children {
+            text-align: center;
+            padding: 20px;
+            color: #757575;
+            font-style: italic;
+        }
+        
+        .checkout-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .checkout-form input {
+            flex: 1;
+        }
+        
+        .checkout-form button {
+            margin: 0;
+            white-space: nowrap;
+        }
+        
+        .instructions {
+            background-color: var(--light-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px dashed var(--secondary-color);
+        }
+        
+        .instructions h3 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.9rem;
+            border-top: 4px solid var(--dark-color);
+        }
+        
+        /* Responsividade */
+        @media (max-width: 600px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .checkout-form {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Creche Feliz</h1>
+            <div class="subtitle">Sistema de Check-in e Check-out</div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="checkin">Check-in</div>
+            <div class="tab" data-tab="checkout">Check-out</div>
+            <div class="tab" data-tab="children">Crianças Presentes</div>
+        </div>
+        
+        <div class="content">
+            <!-- Check-in Tab -->
+            <div class="tab-content active" id="checkin">
+                <div class="instructions">
+                    <h3>Instruções para Check-in</h3>
+                    <p>Preencha todos os dados da criança para realizar o check-in. Após o registro, a criança receberá um número de identificação para o check-out.</p>
+                </div>
+                
+                <form id="checkin-form">
+                    <div class="form-group">
+                        <label for="child-name">Nome da Criança:</label>
+                        <input type="text" id="child-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="child-age">Idade:</label>
+                        <input type="number" id="child-age" min="0" max="12" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="parent-name">Nome do Responsável:</label>
+                        <input type="text" id="parent-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="parent-phone">Telefone do Responsável:</label>
+                        <input type="tel" id="parent-phone" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="allergies">Alergias ou Observações:</label>
+                        <input type="text" id="allergies">
+                    </div>
+                    
+                    <button type="submit">Realizar Check-in</button>
+                </form>
+                
+                <div id="checkin-result" class="result"></div>
+            </div>
+            
+            <!-- Check-out Tab -->
+            <div class="tab-content" id="checkout">
+                <div class="instructions">
+                    <h3>Instruções para Check-out</h3>
+                    <p>Digite o número de identificação da criança para realizar o check-out. Este número foi fornecido durante o check-in.</p>
+                </div>
+                
+                <div class="checkout-form">
+                    <input type="text" id="checkout-id" placeholder="Número de identificação">
+                    <button id="checkout-btn">Realizar Check-out</button>
+                </div>
+                
+                <div id="checkout-result" class="result"></div>
+            </div>
+            
+            <!-- Children Present Tab -->
+            <div class="tab-content" id="children">
+                <div class="instructions">
+                    <h3>Crianças Presentes na Creche</h3>
+                    <p>Lista de todas as crianças que estão atualmente na creche (com check-in realizado e sem check-out).</p>
+                </div>
+                
+                <div class="child-list" id="children-list">
+                    <div class="no-children">Nenhuma criança presente no momento</div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            Sistema Creche Feliz &copy; 2023 - Desenvolvido com ❤️ para as tias da salinha
+        </footer>
+    </div>
+
+    <script>
+        // Dados armazenados localmente
+        let children = JSON.parse(localStorage.getItem('children')) || [];
+        let nextId = parseInt(localStorage.getItem('nextId')) || 1001;
+        
+        // Elementos DOM
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const checkinForm = document.getElementById('checkin-form');
+        const checkinResult = document.getElementById('checkin-result');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const checkoutResult = document.getElementById('checkout-result');
+        const childrenList = document.getElementById('children-list');
+        
+        // Alternar entre abas
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Ativar aba clicada
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Mostrar conteúdo correspondente
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === tabId) {
+                        content.classList.add('active');
+                    }
+                });
+                
+                // Atualizar lista de crianças se necessário
+                if (tabId === 'children') {
+                    updateChildrenList();
+                }
+            });
+        });
+        
+        // Processar check-in
+        checkinForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('child-name').value;
+            const age = document.getElementById('child-age').value;
+            const parentName = document.getElementById('parent-name').value;
+            const parentPhone = document.getElementById('parent-phone').value;
+            const allergies = document.getElementById('allergies').value;
+            
+            // Criar objeto da criança
+            const child = {
+                id: nextId,
+                name: name,
+                age: age,
+                parentName: parentName,
+                parentPhone: parentPhone,
+                allergies: allergies,
+                checkinTime: new Date().toLocaleString('pt-BR'),
+                checkoutTime: null
+            };
+            
+            // Adicionar à lista
+            children.push(child);
+            
+            // Salvar no localStorage
+            localStorage.setItem('children', JSON.stringify(children));
+            localStorage.setItem('nextId', (nextId + 1).toString());
+            
+            // Mostrar resultado
+            checkinResult.textContent = `Check-in realizado com sucesso! Número de identificação: ${nextId}`;
+            checkinResult.className = 'result success';
+            checkinResult.style.display = 'block';
+            
+            // Incrementar ID para próxima criança
+            nextId++;
+            
+            // Limpar formulário
+            checkinForm.reset();
+            
+            // Rolar para o resultado
+            checkinResult.scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        // Processar check-out
+        checkoutBtn.addEventListener('click', function() {
+            const checkoutId = document.getElementById('checkout-id').value.trim();
+            
+            if (!checkoutId) {
+                checkoutResult.textContent = 'Por favor, digite um número de identificação.';
+                checkoutResult.className = 'result error';
+                checkoutResult.style.display = 'block';
+                return;
+            }
+            
+            // Encontrar criança pelo ID
+            const childIndex = children.findIndex(child => child.id == checkoutId);
+            
+            if (childIndex === -1) {
+                checkoutResult.textContent = 'Número de identificação não encontrado.';
+                checkoutResult.className = 'result error';
+                checkoutResult.style.display = 'block';
+                return;
+            }
+            
+            // Verificar se já fez check-out
+            if (children[childIndex].checkoutTime) {
+                checkoutResult.textContent = 'Esta criança já realizou check-out.';
+                checkoutResult.className = 'result error';
+                checkoutResult.style.display = 'block';
+                return;
+            }
+            
+            // Atualizar check-out
+            children[childIndex].checkoutTime = new Date().toLocaleString('pt-BR');
+            
+            // Salvar no localStorage
+            localStorage.setItem('children', JSON.stringify(children));
+            
+            // Mostrar resultado
+            checkoutResult.textContent = `Check-out realizado com sucesso para ${children[childIndex].name}!`;
+            checkoutResult.className = 'result success';
+            checkoutResult.style.display = 'block';
+            
+            // Limpar campo
+            document.getElementById('checkout-id').value = '';
+            
+            // Rolar para o resultado
+            checkoutResult.scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        // Atualizar lista de crianças presentes
+        function updateChildrenList() {
+            // Filtrar crianças que ainda não fizeram check-out
+            const presentChildren = children.filter(child => !child.checkoutTime);
+            
+            if (presentChildren.length === 0) {
+                childrenList.innerHTML = '<div class="no-children">Nenhuma criança presente no momento</div>';
+                return;
+            }
+            
+            // Limpar lista
+            childrenList.innerHTML = '';
+            
+            // Adicionar cada criança à lista
+            presentChildren.forEach(child => {
+                const childItem = document.createElement('div');
+                childItem.className = 'child-item';
+                
+                childItem.innerHTML = `
+                    <div class="child-info">
+                        <div class="child-id">#${child.id} - ${child.name}</div>
+                        <div>Idade: ${child.age} anos | Responsável: ${child.parentName}</div>
+                        <div>Check-in: ${child.checkinTime}</div>
+                        ${child.allergies ? `<div>Observações: ${child.allergies}</div>` : ''}
+                    </div>
+                `;
+                
+                childrenList.appendChild(childItem);
+            });
+        }
+        
+        // Inicializar a lista de crianças se estiver na aba correta
+        if (document.querySelector('.tab.active').getAttribute('data-tab') === 'children') {
+            updateChildrenList();
+        }
+    </script>
+</body>
+</html>
