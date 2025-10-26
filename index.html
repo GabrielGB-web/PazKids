@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paz Kids Liberdade - Check-in/Check-out</title>
     <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
             --primary-color: #0a0446;
@@ -23,7 +27,7 @@
         
         body {
             background-color: #f0f8ff;
-            background-image: url('https://png.pngtree.com/background/20210710/original/pngtree-children-s-day-cartoon-childlike-propaganda-poster-picture-image_1019173.jpg'); /* Substitua pela URL da sua imagem */
+            background-image: url('https://images.unsplash.com/photo-1516627145497-ae69578f5e93?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -34,7 +38,7 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
             overflow: hidden;
@@ -60,10 +64,43 @@
             opacity: 0.9;
         }
         
+        .sync-info {
+            background-color: var(--light-color);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            border: 2px dashed var(--secondary-color);
+        }
+        
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .connected {
+            background-color: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        .disconnected {
+            background-color: #f44336;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
         .tabs {
             display: flex;
             background-color: var(--secondary-color);
             border-bottom: 4px solid var(--dark-color);
+            flex-wrap: wrap;
         }
         
         .tab {
@@ -76,6 +113,7 @@
             transition: all 0.3s;
             color: white;
             text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
+            min-width: 150px;
         }
         
         .tab.active {
@@ -143,13 +181,18 @@
         }
         
         button:hover {
-            background-color: #73e76f;
+            background-color: #8ef060;
             transform: translateY(-2px);
         }
         
         button:active {
             transform: translateY(2px);
             box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .sync-btn {
+            background-color: var(--secondary-color);
+            margin: 10px 0;
         }
         
         .result {
@@ -249,6 +292,41 @@
             border-top: 4px solid var(--dark-color);
         }
         
+        .history-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            background-color: #f5f5f5;
+            border-left: 5px solid var(--accent-color);
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .history-name {
+            font-weight: bold;
+            color: var(--dark-color);
+        }
+        
+        .history-id {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        
+        .history-time {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--accent-color);
+        }
+        
         /* Responsividade */
         @media (max-width: 600px) {
             .tabs {
@@ -262,6 +340,10 @@
             h1 {
                 font-size: 2rem;
             }
+            
+            .history-header {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -270,12 +352,17 @@
         <header>
             <h1>Paz Kids Liberdade</h1>
             <div class="subtitle">Sistema de Check-in e Check-out</div>
+            <div class="sync-info">
+                <span class="connection-status" id="connection-status"></span>
+                <strong id="sync-status">Conectando ao sistema...</strong>
+            </div>
         </header>
         
         <div class="tabs">
             <div class="tab active" data-tab="checkin">Check-in</div>
             <div class="tab" data-tab="checkout">Check-out</div>
             <div class="tab" data-tab="children">Crianças Presentes</div>
+            <div class="tab" data-tab="history">Histórico</div>
         </div>
         
         <div class="content">
@@ -294,7 +381,7 @@
                     
                     <div class="form-group">
                         <label for="child-age">Idade:</label>
-                        <input type="number" id="child-age" min="0" max="12" required>
+                        <input type="number" id="child-age" min="0" max="15" required>
                     </div>
                     
                     <div class="form-group">
@@ -341,21 +428,44 @@
                 </div>
                 
                 <div class="child-list" id="children-list">
-                    <div class="no-children">Nenhuma criança presente no momento</div>
+                    <div class="loading">Carregando crianças presentes...</div>
+                </div>
+            </div>
+            
+            <!-- History Tab -->
+            <div class="tab-content" id="history">
+                <div class="instructions">
+                    <h3>Histórico de Check-outs</h3>
+                    <p>Lista de todas as crianças que já realizaram check-out.</p>
+                </div>
+                
+                <div id="history-list">
+                    <div class="loading">Carregando histórico...</div>
                 </div>
             </div>
         </div>
         
         <footer>
-            Sistema Paz Kids Liberdade &copy; 2025 - Desenvolvido com ❤️ para as tias da salinha
+            Paz Kids Liberdade &copy; 2025 - Desenvolvido com ❤️ para as tias da salinha
         </footer>
     </div>
 
     <script>
-        // Dados armazenados localmente
-        let children = JSON.parse(localStorage.getItem('children')) || [];
-        let nextId = parseInt(localStorage.getItem('nextId')) || 1001;
-        
+        // Configuração do Firebase (substitua com suas próprias credenciais)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDcQAAze-v1NUxStA0-jY2N2uUSy9mkmVM",
+            authDomain: "paz-kids-liberdade.firebaseapp.com",
+            databaseURL: "https://paz-kids-liberdade-default-rtdb.firebaseio.com",
+            projectId: "paz-kids-liberdade",
+            storageBucket: "paz-kids-liberdade.firebasestorage.app",
+            messagingSenderId: "865387632556",
+            appId: "1:865387632556:web:97badea6a9dc1340f2cc09"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // Elementos DOM
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -364,7 +474,55 @@
         const checkoutBtn = document.getElementById('checkout-btn');
         const checkoutResult = document.getElementById('checkout-result');
         const childrenList = document.getElementById('children-list');
-        
+        const historyList = document.getElementById('history-list');
+        const connectionStatus = document.getElementById('connection-status');
+        const syncStatus = document.getElementById('sync-status');
+
+        // Estado da aplicação
+        let children = [];
+        let nextId = 1001;
+
+        // Monitorar estado da conexão
+        firebase.database().ref('.info/connected').on('value', function(snapshot) {
+            if (snapshot.val() === true) {
+                connectionStatus.className = 'connection-status connected';
+                syncStatus.textContent = 'Conectado - Atualizações em tempo real';
+            } else {
+                connectionStatus.className = 'connection-status disconnected';
+                syncStatus.textContent = 'Desconectado - Modo offline';
+            }
+        });
+
+        // Carregar dados iniciais do Firebase
+        function loadInitialData() {
+            database.ref('children').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    children = Object.values(data);
+                    // Encontrar o maior ID para continuar a sequência
+                    nextId = Math.max(...children.map(child => child.id), 1000) + 1;
+                    
+                    // Atualizar as listas
+                    updateChildrenList();
+                    updateHistoryList();
+                }
+            });
+
+            // Escutar por mudanças em tempo real
+            database.ref('children').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    children = Object.values(data);
+                    updateChildrenList();
+                    updateHistoryList();
+                } else {
+                    children = [];
+                    updateChildrenList();
+                    updateHistoryList();
+                }
+            });
+        }
+
         // Alternar entre abas
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -381,11 +539,6 @@
                         content.classList.add('active');
                     }
                 });
-                
-                // Atualizar lista de crianças se necessário
-                if (tabId === 'children') {
-                    updateChildrenList();
-                }
             });
         });
         
@@ -411,26 +564,28 @@
                 checkoutTime: null
             };
             
-            // Adicionar à lista
-            children.push(child);
-            
-            // Salvar no localStorage
-            localStorage.setItem('children', JSON.stringify(children));
-            localStorage.setItem('nextId', (nextId + 1).toString());
-            
-            // Mostrar resultado
-            checkinResult.textContent = `Check-in realizado com sucesso! Número de identificação: ${nextId}`;
-            checkinResult.className = 'result success';
-            checkinResult.style.display = 'block';
-            
-            // Incrementar ID para próxima criança
-            nextId++;
-            
-            // Limpar formulário
-            checkinForm.reset();
-            
-            // Rolar para o resultado
-            checkinResult.scrollIntoView({ behavior: 'smooth' });
+            // Salvar no Firebase
+            database.ref('children/' + nextId).set(child)
+                .then(() => {
+                    // Mostrar resultado
+                    checkinResult.textContent = `Check-in realizado com sucesso! Número de identificação: ${nextId}`;
+                    checkinResult.className = 'result success';
+                    checkinResult.style.display = 'block';
+                    
+                    // Incrementar ID para próxima criança
+                    nextId++;
+                    
+                    // Limpar formulário
+                    checkinForm.reset();
+                    
+                    // Rolar para o resultado
+                    checkinResult.scrollIntoView({ behavior: 'smooth' });
+                })
+                .catch((error) => {
+                    checkinResult.textContent = `Erro ao realizar check-in: ${error.message}`;
+                    checkinResult.className = 'result error';
+                    checkinResult.style.display = 'block';
+                });
         });
         
         // Processar check-out
@@ -444,10 +599,10 @@
                 return;
             }
             
-            // Encontrar criança pelo ID
-            const childIndex = children.findIndex(child => child.id == checkoutId);
+            // Verificar se a criança existe
+            const child = children.find(c => c.id == checkoutId);
             
-            if (childIndex === -1) {
+            if (!child) {
                 checkoutResult.textContent = 'Número de identificação não encontrado.';
                 checkoutResult.className = 'result error';
                 checkoutResult.style.display = 'block';
@@ -455,29 +610,34 @@
             }
             
             // Verificar se já fez check-out
-            if (children[childIndex].checkoutTime) {
+            if (child.checkoutTime) {
                 checkoutResult.textContent = 'Esta criança já realizou check-out.';
                 checkoutResult.className = 'result error';
                 checkoutResult.style.display = 'block';
                 return;
             }
             
-            // Atualizar check-out
-            children[childIndex].checkoutTime = new Date().toLocaleString('pt-BR');
-            
-            // Salvar no localStorage
-            localStorage.setItem('children', JSON.stringify(children));
-            
-            // Mostrar resultado
-            checkoutResult.textContent = `Check-out realizado com sucesso para ${children[childIndex].name}!`;
-            checkoutResult.className = 'result success';
-            checkoutResult.style.display = 'block';
-            
-            // Limpar campo
-            document.getElementById('checkout-id').value = '';
-            
-            // Rolar para o resultado
-            checkoutResult.scrollIntoView({ behavior: 'smooth' });
+            // Atualizar check-out no Firebase
+            database.ref('children/' + checkoutId).update({
+                checkoutTime: new Date().toLocaleString('pt-BR')
+            })
+            .then(() => {
+                // Mostrar resultado
+                checkoutResult.textContent = `Check-out realizado com sucesso para ${child.name}!`;
+                checkoutResult.className = 'result success';
+                checkoutResult.style.display = 'block';
+                
+                // Limpar campo
+                document.getElementById('checkout-id').value = '';
+                
+                // Rolar para o resultado
+                checkoutResult.scrollIntoView({ behavior: 'smooth' });
+            })
+            .catch((error) => {
+                checkoutResult.textContent = `Erro ao realizar check-out: ${error.message}`;
+                checkoutResult.className = 'result error';
+                checkoutResult.style.display = 'block';
+            });
         });
         
         // Atualizar lista de crianças presentes
@@ -511,10 +671,46 @@
             });
         }
         
-        // Inicializar a lista de crianças se estiver na aba correta
-        if (document.querySelector('.tab.active').getAttribute('data-tab') === 'children') {
-            updateChildrenList();
+        // Atualizar lista de histórico
+        function updateHistoryList() {
+            // Filtrar crianças que já fizeram check-out
+            const checkedOutChildren = children.filter(child => child.checkoutTime);
+            
+            if (checkedOutChildren.length === 0) {
+                historyList.innerHTML = '<div class="no-children">Nenhum check-out realizado</div>';
+                return;
+            }
+            
+            // Limpar lista
+            historyList.innerHTML = '';
+            
+            // Adicionar cada criança ao histórico
+            checkedOutChildren.forEach(child => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                
+                historyItem.innerHTML = `
+                    <div class="history-header">
+                        <span class="history-name">${child.name}</span>
+                        <span class="history-id">#${child.id}</span>
+                    </div>
+                    <div class="history-time">
+                        <strong>Check-in:</strong> ${child.checkinTime} | 
+                        <strong>Check-out:</strong> ${child.checkoutTime}
+                    </div>
+                    <div>
+                        <strong>Responsável:</strong> ${child.parentName} | 
+                        <strong>Idade:</strong> ${child.age} anos
+                    </div>
+                    ${child.allergies ? `<div><strong>Observações:</strong> ${child.allergies}</div>` : ''}
+                `;
+                
+                historyList.appendChild(historyItem);
+            });
         }
+
+        // Inicializar a aplicação
+        loadInitialData();
     </script>
 </body>
 </html>
